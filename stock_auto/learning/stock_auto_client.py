@@ -21,7 +21,7 @@ for x in range(forecast_num):
 
     # Read data for prediction
     validate_data = pandas.read_csv('./stock_auto_test.csv', usecols=[1,2,3,4,5], engine='python', names=('nissan','toyota','mazda','honda','subaru'))
-    validate_data = validate_data.tail(10)
+    validate_data = validate_data.tail(30)
 
     print(validate_data.head())
 
@@ -37,7 +37,7 @@ for x in range(forecast_num):
     #-------------------------------------------------
 
     # convert an array of values into a dataset matrix
-    def create_test_dataset(dataset, look_back=10):
+    def create_test_dataset(dataset, look_back=30):
         dataX = []
         for i in range(len(dataset)+1-look_back):
             xset = []
@@ -48,7 +48,7 @@ for x in range(forecast_num):
         return numpy.array(dataX)
 
     # reshape into X=t and Y=t+1
-    look_back = 10
+    look_back = 30
     testX = create_test_dataset(dataset, look_back)
     print(testX.shape)
     print(testX[0])
