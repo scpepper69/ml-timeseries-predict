@@ -20,9 +20,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/')
 def index():
-    return render_template('index.html', img_url='../../learning/result.png')
+    return render_template('index.html', img_url='./result/result.png')
 
-@app.route('/uploads/<filename>')
+@app.route('/result/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
