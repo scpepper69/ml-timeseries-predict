@@ -89,7 +89,7 @@ testX = numpy.reshape(testX, (testX.shape[0], testX.shape[1], testX.shape[2]))
 # create and fit the LSTM network
 """
 model = Sequential()
-model.add(LSTM(400, input_shape=(trainX.shape[1], look_back))) #shapeF•Ï””A‘k‚éŠÔ”
+model.add(LSTM(400, input_shape=(trainX.shape[1], look_back))) #shapeï¼švariables,loopback time
 model.add(BatchNormalization())
 model.add(Dense(trainX.shape[1])) # dimension count
 model.compile(loss='mean_squared_error', optimizer='adam')
