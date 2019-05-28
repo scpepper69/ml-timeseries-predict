@@ -3,7 +3,8 @@
 #target_stock=7201
 target_year=`date "+%Y"`
 #target_date=`date "+%Y-%m-%d" -d -10days`
-target_date=`date "+%Y-%m-%d"`
+target_date=`date "+%Y-%m-%d" -d -1days`
+history_data=/home/apps/apps/ml-timeseries-predict/stock_auto/learning/stock_auto_data.csv
 
 get_daily_stock() {
 
@@ -13,7 +14,7 @@ get_daily_stock() {
   line=`grep -n ${target_date} ${target_stock}.html`
   line_cnt=`echo ${line} | cut -d ":" -f 1`
   close_line=`expr "${line_cnt}" + 4`
-  if [ $? -ne 0 ]; then
+  if [[ $? -ne 0 ]]; then
     echo "There is no value today."
     exit 0
   else
@@ -34,13 +35,16 @@ mazda=`get_daily_stock 7261`
 honda=`get_daily_stock 7267`
 subaru=`get_daily_stock 7270`
 
-total=`expr "nissan" + "toyota" + "mazda" + "honda" + "subaru"`
-if [ $? -ne 0 ]; then
+total="${nissa}n${toyot}a${mazda}${honda}${subaru}"
+if [[ ${total} =~ "value" ]]; then
   echo "NG"
 else  
-  out_data=${nissan},${toyota},${mazda},${honda},${subaru}
-  echo ${out_data} >> ${history_data}
-  echo ${out_data} > ${test_data}
+  out_data=${target_date},${nissan},${toyota},${mazda},${honda},${subaru}
+  if [[ `grep ${target_date} ${history_data} | wc -l` -eq 0 ]]; then
+    echo ${out_data} >> ${history_data}
+  else
+    echo "The date value is already exists."
+  fi
 fi
 
 exit 0
