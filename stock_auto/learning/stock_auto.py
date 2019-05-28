@@ -31,7 +31,7 @@ dataset = scaler.fit_transform(dataset)
 dataset = dataset.astype('float32')
 
 # split into train and test sets
-train_size = int(len(dataset) -30)
+train_size = int(len(dataset) -31)
 test_size = len(dataset) - train_size
 train, test = dataset[0:train_size,:], dataset[train_size:len(dataset),:]
 print(len(train), len(test))
