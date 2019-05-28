@@ -14,16 +14,20 @@ from tensorflow.python.keras.layers import LSTM
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 
-dataframe = pandas.read_csv('C:\github\ml-lstm-timeseries\stock_auto\stock_auto_data.csv', usecols=[1,2,3,4,5], engine='python', skipfooter=0)
-#validate_data = pandas.read_csv('data/src/sample.csv', usecols=[1,2,3,4,5], engine='python', names=('nissan','toyota','mazda','honda','subaru'))
+from graphpipe import remote
+
+#dataframe = pandas.read_csv('C:\github\ml-lstm-timeseries\stock_auto\stock_auto_data.csv', usecols=[1,2,3,4,5], engine='python', skipfooter=0)
+validate_data = pandas.read_csv('./stock_auto_test.csv', usecols=[1,2,3,4,5], engine='python', names=('nissan','toyota','mazda','honda','subaru'))
 
 #plt.plot(dataframe)
 #plt.show()
 print(validate_data.head())
 
 #-------------------------------------------------
-dataset = dataframe.values
-dataset = dataset.astype('float32')
+#dataset = dataframe.values
+#dataset = dataset.astype('float32')
+dataset = validate_data.values
+dataset = validate_data.astype('float32')
 
 # normalize the dataset
 scaler = MinMaxScaler(feature_range=(0, 1))
@@ -31,16 +35,16 @@ dataset = scaler.fit_transform(dataset)
 dataset = dataset.astype('float32')
 
 # split into train and test sets
-train_size = int(len(dataset) -10)
-test_size = len(dataset) - train_size
-train, test = dataset[0:train_size,:], dataset[train_size:len(dataset),:]
-print(len(train), len(test))
+#train_size = int(len(dataset) -11)
+#test_size = len(dataset) - train_size
+#train, test = dataset[0:train_size,:], dataset[train_size:len(dataset),:]
+#print(len(train), len(test))
 
 #-------------------------------------------------
 
 # convert an array of values into a dataset matrix
 # if you give look_back 3, a part of the array will be like this: Jan, Feb, Mar
-def create_dataset(dataset, look_back=20):
+"""def create_dataset(dataset, look_back=10):
     dataX, dataY = [], []
     #for i in range(len(dataset)-look_back-1):
     for i in range(len(dataset)-look_back):
@@ -54,24 +58,36 @@ def create_dataset(dataset, look_back=20):
         #dataY.append(dataset[i + look_back, 0])      
         dataX.append(xset)
         dataY.append(yset) #add
-    return numpy.array(dataX), numpy.array(dataY)
+    return numpy.array(dataX), numpy.array(dataY)"""
+
+def create_test_dataset(dataset, look_back=10):
+    dataX = []
+    #for i in range(len(dataset)-look_back-1):
+    for i in range(len(dataset)+1-look_back):
+        xset = []
+        for j in range(dataset.shape[1]):
+            a = dataset[i:(i+look_back), j]
+            xset.append(a)
+        dataX.append(xset)
+    return numpy.array(dataX)
 
 # reshape into X=t and Y=t+1
 look_back = 10
-trainX, trainY = create_dataset(train, look_back)
+#trainX, trainY = create_dataset(train, look_back)
 #testX, testY = create_dataset(test, look_back)
-testX, testY = create_dataset(test, look_back)
+testX = create_test_dataset(dataset, look_back)
 print(testX.shape)
 print(testX[0])
 print(testY)
 
 # reshape input to be [samples, time steps(number of variables), features] *convert time series into column
-trainX = numpy.reshape(trainX, (trainX.shape[0], trainX.shape[1], trainX.shape[2]))
+#trainX = numpy.reshape(trainX, (trainX.shape[0], trainX.shape[1], trainX.shape[2]))
 testX = numpy.reshape(testX, (testX.shape[0], testX.shape[1], testX.shape[2]))
 
 #-------------------------------------------------
 
 # create and fit the LSTM network
+"""
 model = Sequential()
 model.add(LSTM(400, input_shape=(trainX.shape[1], look_back))) #shapeF•Ï””A‘k‚éŠÔ”
 model.add(BatchNormalization())
@@ -79,13 +95,17 @@ model.add(Dense(trainX.shape[1])) # dimension count
 model.compile(loss='mean_squared_error', optimizer='adam')
 model.summary()
 model.fit(trainX, trainY, epochs=160, batch_size=16, verbose=2)
-
+"""
 #-------------------------------------------------
+#pred = remote.execute("http://localhost:9041", testX)
+#testX=testX.astype('float32')
+
+predictions, = remote.execute_multi("http://127.0.0.1:9041", [testX], ['lstm_input'], ['dense/BiasAdd'])
 
 # make predictions
-trainPredict = model.predict(trainX)
-testPredict = model.predict(testX)
-pad_col = numpy.zeros(dataset.shape[1]-1)
+#trainPredict = model.predict(trainX)
+#testPredict = model.predict(testX)
+#pad_col = numpy.zeros(dataset.shape[1]-1)
 
 # invert predictions
 #def pad_array(val):
@@ -96,11 +116,12 @@ pad_col = numpy.zeros(dataset.shape[1]-1)
 #testPredict = scaler.inverse_transform(pad_array(testPredict))
 #testY = scaler.inverse_transform(pad_array(testY))
 
-trainPredict = scaler.inverse_transform(trainPredict)
-trainY = scaler.inverse_transform(trainY)
-testPredict = scaler.inverse_transform(testPredict)
-testY = scaler.inverse_transform(testY)
+#trainPredict = scaler.inverse_transform(trainPredict)
+#trainY = scaler.inverse_transform(trainY)
+#testPredict = scaler.inverse_transform(testPredict)
+#testY = scaler.inverse_transform(testY)
 
+testPredict = scaler.inverse_transform(predictions)
 
 # calculate root mean squared error
 trainScore = math.sqrt(mean_squared_error(trainY[:,0], trainPredict[:,0]))
