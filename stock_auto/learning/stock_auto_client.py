@@ -4,7 +4,6 @@ import pandas
 import math
 import tensorflow as tf
 from tensorflow.python.framework import graph_io
-#from tensorflow.python.framework import graph_util
 import tf_graph_util as graph_util
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.models import Sequential
@@ -16,176 +15,112 @@ from sklearn.metrics import mean_squared_error
 
 from graphpipe import remote
 
-#dataframe = pandas.read_csv('C:\github\ml-lstm-timeseries\stock_auto\stock_auto_data.csv', usecols=[1,2,3,4,5], engine='python', skipfooter=0)
-validate_data = pandas.read_csv('./stock_auto_test.csv', usecols=[1,2,3,4,5], engine='python', names=('nissan','toyota','mazda','honda','subaru'))
+forecast_num=5
 
-#plt.plot(dataframe)
-#plt.show()
-print(validate_data.head())
+for x in range(forecast_num):
 
-#-------------------------------------------------
-#dataset = dataframe.values
-#dataset = dataset.astype('float32')
-dataset = validate_data.values
-dataset = validate_data.astype('float32')
+    # Read data for prediction
+    validate_data = pandas.read_csv('./stock_auto_test.csv', usecols=[1,2,3,4,5], engine='python', names=('nissan','toyota','mazda','honda','subaru'))
+    validate_data = validate_data.tail(10)
 
-# normalize the dataset
-scaler = MinMaxScaler(feature_range=(0, 1))
-dataset = scaler.fit_transform(dataset)
-dataset = dataset.astype('float32')
+    print(validate_data.head())
 
-# split into train and test sets
-#train_size = int(len(dataset) -11)
-#test_size = len(dataset) - train_size
-#train, test = dataset[0:train_size,:], dataset[train_size:len(dataset),:]
-#print(len(train), len(test))
+    #-------------------------------------------------
+    dataset = validate_data.values
+    dataset = validate_data.astype('float32')
 
-#-------------------------------------------------
+    # normalize the dataset
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    dataset = scaler.fit_transform(dataset)
+    dataset = dataset.astype('float32')
 
-# convert an array of values into a dataset matrix
-# if you give look_back 3, a part of the array will be like this: Jan, Feb, Mar
-"""def create_dataset(dataset, look_back=10):
-    dataX, dataY = [], []
-    #for i in range(len(dataset)-look_back-1):
-    for i in range(len(dataset)-look_back):
-        xset = []
-        yset = []
-        for j in range(dataset.shape[1]):
-            a = dataset[i:(i+look_back), j]
-            xset.append(a)
-            b = dataset[i + look_back, j] #add
-            yset.append(b) #add
-        #dataY.append(dataset[i + look_back, 0])      
-        dataX.append(xset)
-        dataY.append(yset) #add
-    return numpy.array(dataX), numpy.array(dataY)"""
+    #-------------------------------------------------
 
-def create_test_dataset(dataset, look_back=10):
-    dataX = []
-    #for i in range(len(dataset)-look_back-1):
-    for i in range(len(dataset)+1-look_back):
-        xset = []
-        for j in range(dataset.shape[1]):
-            a = dataset[i:(i+look_back), j]
-            xset.append(a)
-        dataX.append(xset)
-    return numpy.array(dataX)
+    # convert an array of values into a dataset matrix
+    def create_test_dataset(dataset, look_back=10):
+        dataX = []
+        for i in range(len(dataset)+1-look_back):
+            xset = []
+            for j in range(dataset.shape[1]):
+                a = dataset[i:(i+look_back), j]
+                xset.append(a)
+            dataX.append(xset)
+        return numpy.array(dataX)
 
-# reshape into X=t and Y=t+1
-look_back = 10
-#trainX, trainY = create_dataset(train, look_back)
-#testX, testY = create_dataset(test, look_back)
-testX = create_test_dataset(dataset, look_back)
-print(testX.shape)
-print(testX[0])
-print(testY)
+    # reshape into X=t and Y=t+1
+    look_back = 10
+    testX = create_test_dataset(dataset, look_back)
+    print(testX.shape)
+    print(testX[0])
 
-# reshape input to be [samples, time steps(number of variables), features] *convert time series into column
-#trainX = numpy.reshape(trainX, (trainX.shape[0], trainX.shape[1], trainX.shape[2]))
-testX = numpy.reshape(testX, (testX.shape[0], testX.shape[1], testX.shape[2]))
+    # reshape input to be [samples, time steps(number of variables), features] *convert time series into column
+    testX = numpy.reshape(testX, (testX.shape[0], testX.shape[1], testX.shape[2]))
 
-#-------------------------------------------------
+    #-------------------------------------------------
 
-# create and fit the LSTM network
-"""
-model = Sequential()
-model.add(LSTM(400, input_shape=(trainX.shape[1], look_back))) #shape：variables,loopback time
-model.add(BatchNormalization())
-model.add(Dense(trainX.shape[1])) # dimension count
-model.compile(loss='mean_squared_error', optimizer='adam')
-model.summary()
-model.fit(trainX, trainY, epochs=160, batch_size=16, verbose=2)
-"""
-#-------------------------------------------------
-#pred = remote.execute("http://localhost:9041", testX)
-#testX=testX.astype('float32')
+    #-------------------------------------------------
+    # Execute Prediction to model server (graphpipe)
+    predictions, = remote.execute_multi("http://127.0.0.1:9041", [testX], ['lstm_input'], ['dense/BiasAdd'])
 
-predictions, = remote.execute_multi("http://127.0.0.1:9041", [testX], ['lstm_input'], ['dense/BiasAdd'])
+    # make predictions
+    #trainPredict = model.predict(trainX)
+    #testPredict = model.predict(testX)
+    #pad_col = numpy.zeros(dataset.shape[1]-1)
 
-# make predictions
-#trainPredict = model.predict(trainX)
-#testPredict = model.predict(testX)
-#pad_col = numpy.zeros(dataset.shape[1]-1)
-
-# invert predictions
-#def pad_array(val):
-#    return numpy.array([numpy.insert(pad_col, 0, x) for x in val])
+    # invert predictions
+    #def pad_array(val):
+    #    return numpy.array([numpy.insert(pad_col, 0, x) for x in val])
     
-#trainPredict = scaler.inverse_transform(pad_array(trainPredict))
-#trainY = scaler.inverse_transform(pad_array(trainY))
-#testPredict = scaler.inverse_transform(pad_array(testPredict))
-#testY = scaler.inverse_transform(pad_array(testY))
+    #trainPredict = scaler.inverse_transform(pad_array(trainPredict))
+    #trainY = scaler.inverse_transform(pad_array(trainY))
+    #testPredict = scaler.inverse_transform(pad_array(testPredict))
+    #testY = scaler.inverse_transform(pad_array(testY))
 
-#trainPredict = scaler.inverse_transform(trainPredict)
-#trainY = scaler.inverse_transform(trainY)
-#testPredict = scaler.inverse_transform(testPredict)
-#testY = scaler.inverse_transform(testY)
+    #trainPredict = scaler.inverse_transform(trainPredict)
+    #trainY = scaler.inverse_transform(trainY)
+    #testPredict = scaler.inverse_transform(testPredict)
+    #testY = scaler.inverse_transform(testY)
 
-testPredict = scaler.inverse_transform(predictions)
+    testPredict = scaler.inverse_transform(predictions)
 
-# calculate root mean squared error
-trainScore = math.sqrt(mean_squared_error(trainY[:,0], trainPredict[:,0]))
-print('Train Score: %.2f RMSE' % (trainScore))
-testScore = math.sqrt(mean_squared_error(testY[:,0], testPredict[:,0]))
-print('Test Score: %.2f RMSE' % (testScore))
+    #-------------------------------------------------
+    print(testPredict)
+
+    result=testPredict[-1]
+    result=result.astype('int16')
+
+    out="N+"+str(x+1)
+    for i in range(len(result)):
+        out=out+","+str(result[i])
+
+    with open('./stock_auto_test.csv', 'a') as f:
+        print(out, file=f)
 
 
-#-------------------------------------------------
-print(testY[:,0])
-print(testPredict[:,0])
+
+
+
+
+
+
+
+
 # shift train predictions for plotting
-trainPredictPlot = numpy.empty_like(dataset)
-trainPredictPlot[:, :] = numpy.nan
-trainPredictPlot[look_back:len(trainPredict)+look_back, :] = trainPredict
+#trainPredictPlot = numpy.empty_like(dataset)
+#trainPredictPlot[:, :] = numpy.nan
+#trainPredictPlot[look_back:len(trainPredict)+look_back, :] = trainPredict
 # shift test predictions for plotting
-testPredictPlot = numpy.empty_like(dataset)
-testPredictPlot[:, :] = numpy.nan
-testPredictPlot[len(trainPredict)+(look_back*2):len(dataset), :] = testPredict
+#testPredictPlot = numpy.empty_like(dataset)
+#testPredictPlot[:, :] = numpy.nan
+#testPredictPlot[len(trainPredict)+(look_back*2):len(dataset), :] = testPredict
 # plot baseline and predictions
-plt.plot(scaler.inverse_transform(dataset))
+#plt.plot(scaler.inverse_transform(dataset))
 #plt.plot(trainPredictPlot)
-plt.plot(testPredictPlot)
-plt.show()
+#plt.plot(testPredictPlot)
+#plt.show()
 
-plt.close()
+#plt.close()
 
-#-------------------------------------------------
-K.set_learning_phase(0)
-ksess = K.get_session()
-#print(ksess)
-
-#K.set_learning_phase(0)
-graph = ksess.graph
-kgraph = graph.as_graph_def()
-print(kgraph)
-
-output_names = [node.op.name for node in model.outputs]
-freeze_var_names = list(set(v.op.name for v in tf.global_variables()))
-
-#-------------------------------------------------
-# fix batch norm nodes
-for node in kgraph.node:
-    if node.op == 'RefSwitch':
-        node.op = 'Switch'
-        for index in range(len(node.input)):
-            if 'moving_' in node.input[index] and "Switch" not in node.input[index]:
-                node.input[index] = node.input[index] + '/read'
-    elif node.op == 'AssignSub':
-        node.op = 'Sub'
-        if 'use_locking' in node.attr: del node.attr['use_locking']
-    elif node.op == 'AssignAdd':
-        node.op = 'Add'
-        if 'use_locking' in node.attr: del node.attr['use_locking']
-
-# convert variables in the model graph to constants
-constant_graph = graph_util.convert_variables_to_constants(ksess, kgraph, output_names)
-#constant_graph = mod_graph_util.convert_variables_to_constants(ksess, kgraph, output_names)
-
-output_dir = "./"
-output_graph_name = "stock_auto.pb"
-output_text_name = "stock_auto.txt"
-graph_io.write_graph(constant_graph, output_dir, output_graph_name, as_text=False)
-graph_io.write_graph(constant_graph, output_dir, output_text_name, as_text=True)
 
 #-------------------------------------------------
 #-------------------------------------------------

@@ -5,6 +5,7 @@ target_year=`date "+%Y"`
 #target_date=`date "+%Y-%m-%d" -d -10days`
 target_date=`date "+%Y-%m-%d" -d -1days`
 history_data=/home/apps/apps/ml-timeseries-predict/stock_auto/learning/stock_auto_data.csv
+test_data=/home/apps/apps/ml-timeseries-predict/stock_auto/learning/stock_auto_test.csv
 
 get_daily_stock() {
 
@@ -42,6 +43,7 @@ else
   out_data=${target_date},${nissan},${toyota},${mazda},${honda},${subaru}
   if [[ `grep ${target_date} ${history_data} | wc -l` -eq 0 ]]; then
     echo ${out_data} >> ${history_data}
+    tail -30 ${history_data} > ${test_data}
   else
     echo "The date value is already exists."
   fi

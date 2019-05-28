@@ -31,7 +31,7 @@ dataset = scaler.fit_transform(dataset)
 dataset = dataset.astype('float32')
 
 # split into train and test sets
-train_size = int(len(dataset) -10)
+train_size = int(len(dataset) -30)
 test_size = len(dataset) - train_size
 train, test = dataset[0:train_size,:], dataset[train_size:len(dataset),:]
 print(len(train), len(test))
@@ -40,7 +40,7 @@ print(len(train), len(test))
 
 # convert an array of values into a dataset matrix
 # if you give look_back 3, a part of the array will be like this: Jan, Feb, Mar
-def create_dataset(dataset, look_back=20):
+def create_dataset(dataset, look_back=30):
     dataX, dataY = [], []
     #for i in range(len(dataset)-look_back-1):
     for i in range(len(dataset)-look_back):
@@ -57,7 +57,7 @@ def create_dataset(dataset, look_back=20):
     return numpy.array(dataX), numpy.array(dataY)
 
 # reshape into X=t and Y=t+1
-look_back = 10
+look_back = 30
 trainX, trainY = create_dataset(train, look_back)
 #testX, testY = create_dataset(test, look_back)
 testX, testY = create_dataset(test, look_back)
@@ -78,7 +78,7 @@ model.add(BatchNormalization())
 model.add(Dense(trainX.shape[1])) # dimension count
 model.compile(loss='mean_squared_error', optimizer='adam')
 model.summary()
-model.fit(trainX, trainY, epochs=160, batch_size=16, verbose=2)
+model.fit(trainX, trainY, epochs=320, batch_size=16, verbose=2)
 
 #-------------------------------------------------
 
