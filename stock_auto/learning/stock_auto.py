@@ -5,6 +5,7 @@ import math
 import tensorflow as tf
 from tensorflow.python.framework import graph_io
 #from tensorflow.python.framework import graph_util
+# use mod program from https://github.com/intel-analytics/analytics-zoo/blob/master/pyzoo/zoo/util/tf_graph_util.py#L226
 import tf_graph_util as graph_util
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.models import Sequential
