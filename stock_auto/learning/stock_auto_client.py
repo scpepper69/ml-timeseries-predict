@@ -67,8 +67,13 @@ for x in range(forecast_num):
 result = pandas.read_csv('./stock_auto_test.csv', usecols=[1,2,3,4,5], engine='python', names=('nissan','toyota','mazda','honda','subaru'))
 result.plot()
 result_set = result.values
-plt.vlines(30, 0, np.max(result_set), "blue", linestyles='dashed')
+plt.vlines(30, 0, numpy.max(result_set), "blue", linestyles='dashed')
 plt.legend(loc='upper left')
-plt.savefig('./result.png')
+plt.savefig('../app/app/result/result.png')
 plt.close()
+
+result = pandas.read_csv('./stock_auto_test.csv', usecols=[0,1,2,3,4,5], engine='python', names=('date','nissan','toyota','mazda','honda','subaru'))
+df_table =  str(result.to_html(classes=["table", "table-condensed", "table-striped"],justify="center", escape=False))
+with open("../app/app/table.html", "w") as f:
+    f.write(df_table)
 

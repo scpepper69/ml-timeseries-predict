@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
   {% if img_url %}
+<div align="center">
+<h2>Forecast for the next 5 days.</h2>
+<p>Predicted date: "{{ disp_dt }}" .</p><br>
+<p>The blue line shows today, and the next five day forecast is to the right of the line.</p>
 <p><img src="{{ img_url }}"></p>
+{{table|safe}}
+</div>
   {% endif %}
 {% endblock %}
